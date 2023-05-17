@@ -51,6 +51,8 @@ for filename1, filename2 in zip(os.listdir(INPUT_DIRECTORY), os.listdir(INPUT_DI
             new_left_x, new_left_y, new_right_x, new_right_y = DC.opposite_interpolate(left, right, True)
             new_bottom_x, new_bottom_y, new_top_x, new_top_y = DC.opposite_interpolate(bottom, top, True)
 
+            # doc_rec_cls.useless_info(new_top_x, new_top_y, new_bottom_x, new_bottom_y)
+
             # Построение линий аппроксимации (сетка)
             linfit_x_bt, linfit_y_bt, linfit_x_lr, linfit_y_lr = DC.get_lines_of_approximation(
                 initial_img.copy(), NUM_OF_LINE, new_left_x, new_left_y, new_right_x, new_right_y, new_bottom_x,
@@ -59,9 +61,9 @@ for filename1, filename2 in zip(os.listdir(INPUT_DIRECTORY), os.listdir(INPUT_DI
             plt.imshow(initial_img)
             # Построение интерполяции аппроксимации (горизонт, вертикал)
             # !Подумать о другом способе вычисления z
-            polys_bt = DC.interpolation_approximation(
+            polys_bt = DC.interpolation_approximation_3(
                 initial_img.copy(), width_image, NUM_OF_LINE, POLYNOMIAL_DEGREE, num_points, linfit_x_bt, linfit_y_bt)
-            polys_lr = DC.interpolation_approximation(
+            polys_lr = DC.interpolation_approximation_3(
                 initial_img.copy(), height_image, NUM_OF_LINE, POLYNOMIAL_DEGREE, num_points, linfit_x_lr, linfit_y_lr)
             plt.show()
 
