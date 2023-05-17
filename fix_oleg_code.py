@@ -11,18 +11,15 @@ INPUT_DIRECTORY = "dataset"
 INPUT_DIRECTORY_DEPTH = "document_depth_maps"
 OUTPUT_DIRECTORY = "output"
 
-for filename1, filename2 in zip(os.listdir(INPUT_DIRECTORY), os.listdir(INPUT_DIRECTORY_DEPTH)):
+for filename1 in os.listdir(INPUT_DIRECTORY):
     file = os.path.join(INPUT_DIRECTORY, filename1)
-    depth = os.path.join(INPUT_DIRECTORY_DEPTH, filename2)
-    if os.path.isfile(file) and os.path.isfile(depth):
+
+    if os.path.isfile(file):
         print(filename1)
-        print(filename2)
         initial_img = cv2.imread(file)
         #initial_img = cv2.resize(initial_img, (initial_img.shape[1] // 2, initial_img.shape[0] // 2))
         initial_img = cv2.cvtColor(initial_img, cv2.COLOR_BGR2RGB)
         height_image, width_image, _ = initial_img.shape
-
-        depth_image = cv2.imread(depth, cv2.IMREAD_UNCHANGED)
 
 
         num_points = int(width_image * 0.1)
@@ -79,9 +76,8 @@ for filename1, filename2 in zip(os.listdir(INPUT_DIRECTORY), os.listdir(INPUT_DI
             plt.plot(XYpairs[:, 0], XYpairs[:, 1], marker='.', color='k', linestyle='none')
             plt.show()
 
-
             # Восстановление искажения перспективы изображения
-            warped_image = DC.remap_image(initial_img.copy(), height_image, width_image, points_set, XYpairs, depth_image)
+            warped_image = DC.remap_image(initial_img.copy(), height_image, width_image, points_set, XYpairs)
             crop_warped_image = image_crop(warped_image)
 
             # Превращает документ в чёрно-белый скан

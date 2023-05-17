@@ -21,7 +21,7 @@ def get_black_white_scan(crop_warped_image):
     return (crop_warped_image_gray > T).astype("uint8") * 255
 
 
-def remap_image(img, height, width, points_set, xy_pairs, depth):
+def remap_image(img, height, width, points_set, xy_pairs):
     comp_w = complex(f'{width}j')
     comp_h = complex(f'{height}j')
     grid_x, grid_y = np.mgrid[0:(height - 1):comp_h, 0:(width - 1):comp_w]
