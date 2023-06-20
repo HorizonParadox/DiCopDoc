@@ -73,7 +73,7 @@ class DocumentRecovery:
             single_image_flag = True
             yolo_output = [[bboxes[0], segments[0], scores[0]]]
         elif len(segments) > 1:
-            # Если на изображении несколько объектов...
+            # Еслиа на изображении несколько объектов...
             single_image_flag = False
 
             # Определяет два объекта с наибольшими оценками
@@ -206,17 +206,17 @@ class DocumentRecovery:
 
     def find_edges(self, contour, convex):
         """
-        Определяет грани многоугольника на изображении.
+        Определяет края многоугольника на изображении.
 
         Аргументы:
         - contour: Контур многоугольника.
         - convex: Выпуклая оболочка многоугольника.
 
         Возвращает:
-        - left: Грани, лежащие слева от диагональных линий.
-        - right: Грани, лежащие справа от диагональных линий.
-        - top: Грани, расположенные сверху от диагональных линий.
-        - bottom: Грани, расположенные снизу от диагональных линий.
+        - left: Край, лежащий слева от диагональных линий.
+        - right: Край, лежащий  справа от диагональных линий.
+        - top: Край, лежащий  сверху от диагональных линий.
+        - bottom: Край, лежащий  снизу от диагональных линий.
         """
 
         img_test = self.initial_image.copy()
@@ -237,29 +237,29 @@ class DocumentRecovery:
 
         self.plot_image(img_test)
 
-        # Выделение граней, лежащих слева от диагональных линий
+        # Выделение краёв, лежащих слева от диагональных линий
         left = [edge for edge in np.array(edges).tolist() if
                 (self.line_point_cross_product(diag_lines[0], edge) < 0 < self.line_point_cross_product(
                     diag_lines[1], edge))]
 
-        # Выделение граней, лежащих снизу от диагональных линий
+        # Выделение краёв, лежащих снизу от диагональных линий
         bottom = [edge for edge in np.array(edges).tolist() if
                   (self.line_point_cross_product(diag_lines[0], edge) < 0 and self.line_point_cross_product(
                       diag_lines[1], edge) < 0)]
 
-        # Выделение граней, лежащих справа от диагональных линий
+        # Выделение краёв, лежащих справа от диагональных линий
         right = [edge for edge in np.array(edges).tolist() if
                  (self.line_point_cross_product(diag_lines[0], edge) > 0 > self.line_point_cross_product(
                      diag_lines[1], edge))]
 
-        # Выделение граней, лежащих сверху от диагональных линий
+        # Выделение краёв, лежащих сверху от диагональных линий
         top = [edge for edge in np.array(edges).tolist() if
                (self.line_point_cross_product(diag_lines[0], edge) > 0 and self.line_point_cross_product(
                    diag_lines[1], edge) > 0)]
 
         top.sort()
 
-        right = right[::-1]  # Инвертирование порядка граней справа
+        right = right[::-1]  # Инвертирование порядка краёв справа
 
         return left, right, top, bottom
 
@@ -269,17 +269,17 @@ class DocumentRecovery:
         Вычисляет размеры многоугольника на изображении.
 
         Аргументы:
-        - left: Грани, лежащие слева от диагональных линий.
-        - right: Грани, лежащие справа от диагональных линий.
-        - top: Грани, расположенные сверху от диагональных линий.
-        - bottom: Грани, расположенные снизу от диагональных линий.
+        - left: Край, лежащий слева от диагональных линий.
+        - right: Край, лежащий справа от диагональных линий.
+        - top: Край, лежащий сверху от диагональных линий.
+        - bottom: Край, лежащий снизу от диагональных линий.
 
         Возвращает:
         - length: Длина многоугольника.
         - width: Ширина многоугольника.
         """
 
-        # Вычисление длины граней
+        # Вычисление длины краёв
         left_length = round(spatial.distance.euclidean(left[0], left[-1]))
         right_length = round(spatial.distance.euclidean(right[0], right[-1]))
         top_length = round(spatial.distance.euclidean(top[0], top[-1]))
@@ -613,52 +613,6 @@ class DocumentRecovery:
         # Обрезка переотображенного изображения
         crop_warped_image = self.crop_image(warped_image)
         crop_warped_image_BGR = cv2.cvtColor(crop_warped_image, cv2.COLOR_RGB2BGR)
-        plt.subplot(121, title='before')
-        plt.imshow(img)
-        plt.axis('off')
-        plt.subplot(122, title='after')
-        plt.imshow(crop_warped_image)
-        plt.axis('off')
-        plt.tight_layout()
-        plt.show()
-        return crop_warped_image_BGR
-
-    def remap_image_2(self, height, width, points_set, xy_pairs, depth_map):
-        img = self.initial_image.copy()
-        comp_w = complex(f'{width}j')
-        comp_h = complex(f'{height}j')
-        grid_x, grid_y = np.mgrid[0:(height - 1):comp_h, 0:(width - 1):comp_w]
-        grid_z = griddata(np.fliplr(xy_pairs), np.fliplr(points_set), (grid_x, grid_y), method='cubic')
-        map_x = np.append([], [ar[:, 1] for ar in grid_z]).reshape(height, width)
-        map_y = np.append([], [ar[:, 0] for ar in grid_z]).reshape(height, width)
-
-        map_z = np.full((height, width), np.nan)
-        mask = ~np.isnan(map_x)
-        map_z[mask] = depth_map[mask]
-
-        map_x_32 = map_x.astype('float32')
-        map_x_32 = np.nan_to_num(map_x_32, nan=0)
-        map_y_32 = map_y.astype('float32')
-        map_y_32 = np.nan_to_num(map_y_32, nan=0)
-        map_z_32 = map_z.astype('float32')
-        map_z_32 = np.nan_to_num(map_z_32, nan=0)
-
-        remapped_image = np.zeros_like(img)
-        for y in range(height):
-            for x in range(width):
-                depth = map_z_32[y, x]
-
-                offset_x = int(round(map_x_32[y, x] + depth))
-                offset_y = int(round(map_y_32[y, x] + depth))
-                remapped_image[offset_x, offset_y] = img[y, x]
-        self.plot_image(self.crop_image(remapped_image))
-
-        warped_image = cv2.remap(img, map_x_32, map_y_32, cv2.INTER_CUBIC)
-        warped_image = np.fliplr(np.rot90(warped_image, 2))
-
-        crop_warped_image = self.crop_image(warped_image)
-        crop_warped_image_BGR = cv2.cvtColor(crop_warped_image, cv2.COLOR_RGB2BGR)
-
         plt.subplot(121, title='before')
         plt.imshow(img)
         plt.axis('off')

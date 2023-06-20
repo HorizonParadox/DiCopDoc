@@ -7,20 +7,16 @@ NUM_OF_GRID_LINE = 9
 POLYNOMIAL_DEGREE = 3
 NUM_POINT_PERCENT = 0.1
 THRESHOLD_COEFFICIENT = 0.05
-INPUT_DIRECTORY = "../../images/single_image"
+INPUT_DIRECTORY = "../../images/dataset"
 INPUT_DIRECTORY_DEPTH = "../../document_depth_maps"
 OUTPUT_DIRECTORY = "../../images/output"
 WEIGHT_DIRECTORY = '../../weights/best.pt'
 
-for image_filename, depth_filename in zip(os.listdir(INPUT_DIRECTORY), os.listdir(INPUT_DIRECTORY_DEPTH)):
+for image_filename in os.listdir(INPUT_DIRECTORY):
     image_file = os.path.join(INPUT_DIRECTORY, image_filename)
-    depth_file = os.path.join(INPUT_DIRECTORY_DEPTH, depth_filename)
-    if os.path.isfile(image_file) and os.path.isfile(depth_file):
+    if os.path.isfile(image_file):
         print(image_filename)
-        print(depth_filename)
 
-        depth_image = cv2.imread(depth_file, cv2.IMREAD_UNCHANGED)
-        depth_map = cv2.imread('../../document_depth_maps/10_1.png', cv2.IMREAD_GRAYSCALE)
         model = DocumentRecovery(image_file, WEIGHT_DIRECTORY)
         height_image, width_image, _ = model.initial_image.shape
         num_points = int(width_image * NUM_POINT_PERCENT)
@@ -44,7 +40,6 @@ for image_filename, depth_filename in zip(os.listdir(INPUT_DIRECTORY), os.listdi
             # Отображение полученых сторон разным цветом
             model.plot_colorful_edges(left, right, top, bottom)
 
-            # doc_rec_cls.zip_coords(left, right, bottom, top)
             # Интерполяция двух кривых
             new_left_x, new_left_y, new_right_x, new_right_y = model.calculate_opposite_interpolate(left, right, True)
             new_bottom_x, new_bottom_y, new_top_x, new_top_y = model.calculate_opposite_interpolate(bottom, top, True)
@@ -67,13 +62,10 @@ for image_filename, depth_filename in zip(os.listdir(INPUT_DIRECTORY), os.listdi
                 outline_length, outline_width, polys_bt, polys_lr)
 
             # Получение координат исправленной сетки
-            # Вернул shift для тестов, нада убрать потом
-            shift = left[0]
-            XYpairs = model.get_fix_grid_coordinates(outline_length, outline_width, NUM_OF_GRID_LINE, shift)
+            XYpairs = model.get_fix_grid_coordinates(outline_length, outline_width, NUM_OF_GRID_LINE)
 
             # Восстановление искажения перспективы изображения
-            crop_warped_image = model.remap_image_2(height_image, width_image, points_set, XYpairs, depth_map)
-
+            crop_warped_image = model.remap_image(height_image, width_image, points_set, XYpairs)
 
             # Превращает документ в чёрно-белый скан
             # scan = DC.get_black_white_scan(crop_warped_image)

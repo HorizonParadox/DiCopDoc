@@ -2,10 +2,9 @@ import cv2
 import numpy as np
 from fast_slic import Slic
 from matplotlib import pyplot as plt
-from scipy.interpolate import splprep, splev
+from scipy.interpolate import splprep, splev, griddata
 from scipy.signal import savgol_filter
 from skimage.filters import threshold_local
-
 from src.main.document_recovery import sort_points, line_point_cross_product
 
 
@@ -152,3 +151,50 @@ def get_black_white_scan(crop_warped_image):
     crop_warped_image_gray = cv2.cvtColor(crop_warped_image, cv2.COLOR_RGB2GRAY)
     T = threshold_local(crop_warped_image_gray, 11, offset=10, method="gaussian")
     return (crop_warped_image_gray > T).astype("uint8") * 255
+
+
+def remap_image_2(self, height, width, points_set, xy_pairs, depth_map):
+    img = self.initial_image.copy()
+    comp_w = complex(f'{width}j')
+    comp_h = complex(f'{height}j')
+    grid_x, grid_y = np.mgrid[0:(height - 1):comp_h, 0:(width - 1):comp_w]
+    grid_z = griddata(np.fliplr(xy_pairs), np.fliplr(points_set), (grid_x, grid_y), method='cubic')
+    map_x = np.append([], [ar[:, 1] for ar in grid_z]).reshape(height, width)
+    map_y = np.append([], [ar[:, 0] for ar in grid_z]).reshape(height, width)
+
+    map_z = np.full((height, width), np.nan)
+    mask = ~np.isnan(map_x)
+    map_z[mask] = depth_map[mask]
+
+    map_x_32 = map_x.astype('float32')
+    map_x_32 = np.nan_to_num(map_x_32, nan=0)
+    map_y_32 = map_y.astype('float32')
+    map_y_32 = np.nan_to_num(map_y_32, nan=0)
+    map_z_32 = map_z.astype('float32')
+    map_z_32 = np.nan_to_num(map_z_32, nan=0)
+
+    remapped_image = np.zeros_like(img)
+    for y in range(height):
+        for x in range(width):
+            depth = map_z_32[y, x]
+
+            offset_x = int(round(map_x_32[y, x] + depth))
+            offset_y = int(round(map_y_32[y, x] + depth))
+            remapped_image[offset_x, offset_y] = img[y, x]
+    self.plot_image(self.crop_image(remapped_image))
+
+    warped_image = cv2.remap(img, map_x_32, map_y_32, cv2.INTER_CUBIC)
+    warped_image = np.fliplr(np.rot90(warped_image, 2))
+
+    crop_warped_image = self.crop_image(warped_image)
+    crop_warped_image_BGR = cv2.cvtColor(crop_warped_image, cv2.COLOR_RGB2BGR)
+
+    plt.subplot(121, title='before')
+    plt.imshow(img)
+    plt.axis('off')
+    plt.subplot(122, title='after')
+    plt.imshow(crop_warped_image)
+    plt.axis('off')
+    plt.tight_layout()
+    plt.show()
+    return crop_warped_image_BGR
